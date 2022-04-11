@@ -22,12 +22,12 @@ def check_user_link(link):
     return response.raise_for_status()
 
 
-def shorten_link(link):
+def shorten_link(link, headers):
     url = 'https://api-ssl.bitly.com/v4/shorten'
     payload = {
       'long_url': link
     }
-    response = requests.post(url, headers=HEADERS, json=payload)
+    response = requests.post(url, headers=headers, json=payload)
     response.raise_for_status()
     decoded_response = response.json()
     if 'errors' in decoded_response:
@@ -36,13 +36,13 @@ def shorten_link(link):
     return bitlink
 
 
-def count_clicks(link):
+def count_clicks(link, headers):
     fixed_link = delete_http(link)
     params = (
       ('unit', 'month'),
     )
     url = f'https://api-ssl.bitly.com/v4/bitlinks/{fixed_link}/clicks/summary'
-    response = requests.get(url, headers=HEADERS, params=params)
+    response = requests.get(url, headers=headers, params=params)
     response.raise_for_status()
     decoded_response = response.json()
     if 'errors' in decoded_response:
@@ -51,14 +51,20 @@ def count_clicks(link):
     return total_clicks
 
 
-def is_bitlink(link):
+def is_bitlink(link, headers):
     fixed_link = delete_http(link)
     url = f'https://api-ssl.bitly.com/v4/bitlinks/{fixed_link}'
-    response = requests.get(url, headers=HEADERS)
+    response = requests.get(url, headers=headers)
     return response.ok
 
 
 def main():
+    load_dotenv()
+    token = os.getenv('BITLY_SECRET_TOKEN')
+    headers = {
+        'Authorization': token,
+    }
+
     parser = argparse.ArgumentParser(
         description='''The script shortens the user's link and returns a bitlink. 
         Counts the number of clicks on bitlinks.'''
@@ -72,23 +78,17 @@ def main():
 
     try:
         check_user_link(args.link)
-        if is_bitlink(args.link):
-            number_of_clicks = count_clicks(args.link)
+        if is_bitlink(args.link, headers):
+            number_of_clicks = count_clicks(args.link, headers)
             print(
               f'Your link has been followed: {number_of_clicks} time(s)'
             )
         else:
-            bitlink = shorten_link(args.link)
+            bitlink = shorten_link(args.link, headers)
             print('Bitlink:', bitlink)
     except requests.exceptions.HTTPError:
         print('Error. Check that the link is correct.')
 
 
 if __name__ == '__main__':
-    load_dotenv()
-    TOKEN = os.getenv('BITLY_SECRET_TOKEN')
-    HEADERS = {
-        'Authorization': TOKEN,
-        'Content-Type': 'application/json'
-    }
     main()
