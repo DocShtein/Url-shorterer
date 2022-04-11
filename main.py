@@ -5,14 +5,6 @@ from dotenv import load_dotenv
 import requests
 from urllib.parse import urlparse
 
-load_dotenv()
-
-TOKEN = os.getenv('BITLY_SECRET_TOKEN')
-HEADERS = {
-    'Authorization': TOKEN,
-    'Content-Type': 'application/json'
-}
-
 
 def delete_http(link):
     url = urlparse(link)
@@ -75,10 +67,18 @@ def main():
             )
         else:
             bitlink = shorten_link(args.link)
+            response = requests.get(bitlink)
+            response.raise_for_status()
             print('Bitlink:', bitlink)
     except requests.exceptions.HTTPError:
         print('Error. Check that the link is correct.')
 
 
 if __name__ == '__main__':
+    load_dotenv()
+    TOKEN = os.getenv('BITLY_SECRET_TOKEN')
+    HEADERS = {
+        'Authorization': TOKEN,
+        'Content-Type': 'application/json'
+    }
     main()
