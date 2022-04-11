@@ -6,9 +6,20 @@ import requests
 from urllib.parse import urlparse
 
 
+def add_http(link):
+    url = urlparse(link, 'https')
+    return url.scheme + '://' + url.netloc + url.path
+
+
 def delete_http(link):
     url = urlparse(link)
     return url.netloc + url.path
+
+
+def check_user_link(link):
+    fixed_link = add_http(link)
+    response = requests.get(fixed_link)
+    return response.raise_for_status()
 
 
 def shorten_link(link):
@@ -60,6 +71,7 @@ def main():
     args = parser.parse_args()
 
     try:
+        check_user_link(args.link)
         if is_bitlink(args.link):
             number_of_clicks = count_clicks(args.link)
             print(
@@ -67,8 +79,6 @@ def main():
             )
         else:
             bitlink = shorten_link(args.link)
-            response = requests.get(bitlink)
-            response.raise_for_status()
             print('Bitlink:', bitlink)
     except requests.exceptions.HTTPError:
         print('Error. Check that the link is correct.')
